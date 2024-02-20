@@ -26,50 +26,50 @@ fn add_process_info(info: ProcessInfo) {
 
 // Check if path is a PID
 fn check_proc(path: &PathBuf) -> bool {
-    if let Some(file_name) = path.file_name() {
-        // Convert OsStr to a &str
-        if let Some(file_name_str) = file_name.to_str() {
-            // Attempt to parse the file name as an integer
-            match file_name_str.parse::<i32>() {
-                Ok(num) => return true,
-                Err(_) => return false,
-            }
-        }
-    }
-
-    return false
+    path.file_name()
+        .and_then(|n| n.to_str())
+        .and_then(|s| s.parse::<i32>().ok())
+        .is_some()
 }
 
 // Parser proc
 fn parse_proc(path: &PathBuf) {
-    let pid: &str;
-    let user: &str;
-    let cpu_usage: &str;
-    let mem_usage: &str;
-    let command: &str;
+    // Attempt to extract the file name as a string and parse it as i32
+    let file_name = match path.file_name().and_then(|n| n.to_str()) {
+        Some(name) => name,
+        None => return, // Early return if file_name is not found or not a valid UTF-8 string
+    };
 
-    // Get PID
-    if let Some(file_name) = path.file_name() {
-        pid = file_name.to_str();
-    }
+    let pid = match file_name.parse::<i32>() {
+        Ok(pid) => pid,
+        Err(_) => return, // Early return if file_name cannot be parsed as i32
+    };
 
-    // Get User
-    cat(path)
+    // At this point, you have a valid PID
+    // Placeholder: Implement logic to get user, cpu_usage, mem_usage, and command
+    let user = "placeholder_user".to_string(); // Replace this with actual logic
+    let cpu_usage = 0.0; // Placeholder
+    let mem_usage = 0.0; // Placeholder
+    let command = "placeholder_command".to_string(); // Placeholder
+
+    // Add process info
+    add_process_info(ProcessInfo {
+        pid,
+        user,
+        cpu_usage,
+        mem_usage,
+        command,
+    });
 }
 
 // Access proc
 pub fn access_proc() {
-    match fs::read_dir("/proc") {
-        Err(why) => println!("! {:?}", why.kind()),
-        Ok(paths) => for path in paths {
-            let path = match path {
-                Ok(p) => p.path(),
-                Err(_) => continue, // If the path cannot be read, skip to the next one
-            };
-
-            if check_proc(&path) {
-                parse_proc(&path)
+    if let Ok(paths) = fs::read_dir("/proc") {
+        for path in paths.filter_map(Result::ok) {
+            let path_buf = path.path();
+            if check_proc(&path_buf) {
+                parse_proc(&path_buf);
             }
-        },
+        }
     }
 }
