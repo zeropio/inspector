@@ -15,7 +15,8 @@ struct ProcessInfo {
 }
 
 lazy_static! {
-    static ref PROCESS_INFO: Mutex<VecDeque<ProcessInfo>> = Mutex::new(VecDeque::new());
+    static ref PROCESS_INFO: Mutex<VecDeque<ProcessInfo>> =
+        Mutex::new(VecDeque::new());
 }
 
 // Function to add a new process info
@@ -35,7 +36,8 @@ fn check_proc(path: &PathBuf) -> bool {
 // Parser proc
 fn parse_proc(path: &PathBuf) {
     // Attempt to extract the file name as a string and parse it as i32 for PID
-    let pid = match path.file_name().and_then(|n| n.to_str()).and_then(|name| name.parse::<i32>().ok()) {
+    let pid = match path.file_name().and_then(|n|
+            n.to_str()).and_then(|name| name.parse::<i32>().ok()) {
         Some(pid) => pid,
         None => {
             println!("Failed to parse PID");
@@ -53,7 +55,8 @@ fn parse_proc(path: &PathBuf) {
         },
     };
 
-    let user = match uid_str.parse::<u32>().ok().and_then(|uid| get_username_from_uid(uid)) {
+    let user = match uid_str.parse::<u32>().ok().and_then(|uid|
+            get_username_from_uid(uid)) {
         Some(username) => username,
         None => {
             println!("No user found for UID {}", uid_str);
@@ -61,10 +64,22 @@ fn parse_proc(path: &PathBuf) {
         },
     };
 
+    // Get command
+    let cmdline_path = path.join("cmdline");
+    let command = match cat(&cmdline_path) {
+        Ok(content) => {
+            // Replace null bytes with spaces for readability
+            content.replace("\0", " ").trim_end().to_string()
+        },
+        Err(e) => {
+            println!("Error reading file: {}", e);
+            return;
+        },
+    };
+
     // Placeholder values for CPU usage, memory usage, and command
     let cpu_usage = 0.0; // Placeholder
     let mem_usage = 0.0; // Placeholder
-    let command = "placeholder_command".to_string(); // Placeholder
 
     // Add process info
     add_process_info(ProcessInfo {
