@@ -5,8 +5,13 @@ use parking_lot::Mutex;
 use std::collections::VecDeque;
 use crate::utils::{cat, process_search_line, get_username_from_uid};
 
+//--------------------------------------------------------------------------------------------------
+// Variables
+//--------------------------------------------------------------------------------------------------
+
 // Create global structure
-struct ProcessInfo {
+#[derive(Clone)]
+pub struct ProcessInfo {
     pid: i32,
     user: String,
     cpu_usage: f32,
@@ -14,10 +19,47 @@ struct ProcessInfo {
     command: String,
 }
 
+// Make values accessible
+impl ProcessInfo {
+    pub fn pid(&self) -> i32 {
+        self.pid
+    }
+    pub fn user(&self) -> &String {
+        &self.user
+    }
+
+    pub fn cpu_usage(&self) -> f32 {
+        self.cpu_usage
+    }
+
+    pub fn mem_usage(&self) -> f32 {
+        self.mem_usage
+    }
+
+    pub fn command(&self) -> &String {
+        &self.command
+    }
+}
+
 lazy_static! {
     static ref PROCESS_INFO: Mutex<VecDeque<ProcessInfo>> =
         Mutex::new(VecDeque::new());
 }
+
+
+//--------------------------------------------------------------------------------------------------
+// ProcessInfo Manipulation Functions
+//--------------------------------------------------------------------------------------------------
+
+// Public function to get a snapshot of all current ProcessInfo
+pub fn get_all_process_info() -> Vec<ProcessInfo> {
+    let data = PROCESS_INFO.lock();
+    data.iter().cloned().collect()
+}
+
+//--------------------------------------------------------------------------------------------------
+// Access Process Functions
+//--------------------------------------------------------------------------------------------------
 
 // Function to add a new process info
 fn add_process_info(info: ProcessInfo) {
