@@ -1,15 +1,11 @@
-use std::fs;
-use std::path::{Path, PathBuf};
+use crate::utils::{
+    cat, format_memory_size, get_username_from_uid, parse_utime_and_stime, process_search_line,
+};
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
 use std::collections::VecDeque;
-use crate::utils::{
-    cat,
-    process_search_line,
-    get_username_from_uid,
-    format_memory_size,
-    parse_utime_and_stime
-};
+use std::fs;
+use std::path::{Path, PathBuf};
 
 //--------------------------------------------------------------------------------------------------
 // Variables
@@ -33,7 +29,9 @@ impl ProcessInfo {
     pub fn user(&self) -> &String {
         &self.user
     }
-    pub fn cpu_usage(&self) -> &String { &self.cpu_usage }
+    pub fn cpu_usage(&self) -> &String {
+        &self.cpu_usage
+    }
     pub fn mem_usage(&self) -> &String {
         &self.mem_usage
     }
@@ -43,10 +41,8 @@ impl ProcessInfo {
 }
 
 lazy_static! {
-    static ref PROCESS_INFO: Mutex<VecDeque<ProcessInfo>> =
-        Mutex::new(VecDeque::new());
+    static ref PROCESS_INFO: Mutex<VecDeque<ProcessInfo>> = Mutex::new(VecDeque::new());
 }
-
 
 //--------------------------------------------------------------------------------------------------
 // ProcessInfo Manipulation Functions
@@ -79,13 +75,16 @@ fn check_proc(path: &PathBuf) -> bool {
 // Parser proc
 fn parse_proc(path: &PathBuf) {
     // Attempt to extract the file name as a string and parse it as i32 for PID
-    let pid = match path.file_name().and_then(|n|
-            n.to_str()).and_then(|name| name.parse::<i32>().ok()) {
+    let pid = match path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .and_then(|name| name.parse::<i32>().ok())
+    {
         Some(pid) => pid,
         None => {
             println!("Failed to parse PID");
             return;
-        },
+        }
     };
 
     // Get username by UID
@@ -95,16 +94,19 @@ fn parse_proc(path: &PathBuf) {
         Err(e) => {
             println!("Error reading file: {}", e);
             return;
-        },
+        }
     };
 
-    let user = match uid_str.parse::<u32>().ok().and_then(|uid|
-            get_username_from_uid(uid)) {
+    let user = match uid_str
+        .parse::<u32>()
+        .ok()
+        .and_then(|uid| get_username_from_uid(uid))
+    {
         Some(username) => username,
         None => {
             println!("No user found for UID {}", uid_str);
             return;
-        },
+        }
     };
 
     // Get command
@@ -113,11 +115,11 @@ fn parse_proc(path: &PathBuf) {
         Ok(content) => {
             // Replace null bytes with spaces for readability
             content.replace("\0", " ").trim_end().to_string()
-        },
+        }
         Err(e) => {
             println!("Error reading file: {}", e);
             return;
-        },
+        }
     };
 
     // Get CPU
@@ -127,11 +129,11 @@ fn parse_proc(path: &PathBuf) {
             let uptime_str = content.split_whitespace().next().unwrap_or("0");
             let uptime_seconds: f64 = uptime_str.parse().unwrap_or(0.0);
             uptime_seconds
-        },
+        }
         Err(e) => {
             println!("Error reading file: {}", e);
             return;
-        },
+        }
     };
 
     let stat_path = path.join("stat");
@@ -139,16 +141,19 @@ fn parse_proc(path: &PathBuf) {
         Ok(content) => {
             // Replace null bytes with spaces for readability
             content.replace("\0", " ").trim_end().to_string()
-        },
+        }
         Err(e) => {
             println!("Error reading file: {}", e);
             return;
-        },
+        }
     };
     let (utime, stime) = parse_utime_and_stime(stat_content);
     let cpus = num_cpus::get();
 
-    let cpu_usage = format!("{:.2}%", ((utime + stime) as f64 / uptime) * 100.0 / cpus as f64);
+    let cpu_usage = format!(
+        "{:.2}%",
+        ((utime + stime) as f64 / uptime) * 100.0 / cpus as f64
+    );
 
     // Get memory usage
     // we wil use status_path
@@ -157,10 +162,9 @@ fn parse_proc(path: &PathBuf) {
         Err(e) => {
             println!("Error reading file: {}", e);
             return;
-        },
+        }
     };
-    let mem_usage_f32 =
-        mem_usage_string.parse::<f32>().unwrap_or(0.0);
+    let mem_usage_f32 = mem_usage_string.parse::<f32>().unwrap_or(0.0);
 
     // Formatting mem_usage
     let mem_usage = format_memory_size(mem_usage_f32);

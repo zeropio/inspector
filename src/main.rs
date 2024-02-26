@@ -5,7 +5,6 @@ mod process;
 mod utils;
 
 fn main() {
-
     let update_interval = Duration::from_secs(5);
 
     // Monitor
@@ -15,9 +14,15 @@ fn main() {
 
         // Testing information returned
         for process in processes {
-            println!("PID: {}, User: {}, Command: {}, CPU Usage: {}, \
-            Memory Usage: {}", process.pid(), process.user(), process.command(),
-                                process.cpu_usage(), process.mem_usage());
+            println!(
+                "PID: {}, User: {}, Command: {}, CPU Usage: {}, \
+            Memory Usage: {}",
+                process.pid(),
+                process.user(),
+                process.command(),
+                process.cpu_usage(),
+                process.mem_usage()
+            );
         }
 
         // Pause the loop for the specified update interval
