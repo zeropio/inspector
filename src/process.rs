@@ -1,5 +1,6 @@
 use crate::utils::{
-    cat, format_memory_size, get_username_from_uid, parse_utime_and_stime, process_search_line,
+    cat, format_memory_size, format_process_time, get_username_from_uid, parse_statm_content,
+    parse_utime_and_stime, process_search_line,
 };
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
@@ -17,8 +18,13 @@ use std::path::{Path, PathBuf};
 pub struct ProcessInfo {
     pid: i32,
     user: String,
+    nice_value: i32,
+    vm: String,
+    res: String,
+    shr: String,
     cpu_usage: String,
     mem_usage: String,
+    time: String,
     command: String,
 }
 
@@ -30,11 +36,26 @@ impl ProcessInfo {
     pub fn user(&self) -> &String {
         &self.user
     }
+    pub fn nice_value(&self) -> i32 {
+        self.nice_value
+    }
+    pub fn vm(&self) -> &String {
+        &self.vm
+    }
+    pub fn res(&self) -> &String {
+        &self.res
+    }
+    pub fn shr(&self) -> &String {
+        &self.shr
+    }
     pub fn cpu_usage(&self) -> &String {
         &self.cpu_usage
     }
     pub fn mem_usage(&self) -> &String {
         &self.mem_usage
+    }
+    pub fn time(&self) -> &String {
+        &self.time
     }
     pub fn command(&self) -> &String {
         &self.command
@@ -110,9 +131,9 @@ fn parse_proc(path: &PathBuf) {
         }
     };
 
-    // Get command
-    let cmdline_path = path.join("cmdline");
-    let command = match cat(&cmdline_path) {
+    // Get NI
+    let stat_path = path.join("stat");
+    let stat_content = match cat(&stat_path) {
         Ok(content) => {
             // Replace null bytes with spaces for readability
             content.replace("\0", " ").trim_end().to_string()
@@ -122,6 +143,32 @@ fn parse_proc(path: &PathBuf) {
             return;
         }
     };
+    let parts: Vec<&str> = stat_content.split_whitespace().collect();
+    let nice_value = parts.get(18).unwrap_or(&"").parse::<i32>().unwrap_or(0) - 20; // Adjusting back from kernel representation
+
+    // Get VIRT, RES and SHR
+    let statm_path = path.join("statm");
+    let statm_content = match cat(&statm_path) {
+        Ok(content) => content,
+        Err(e) => {
+            println!("Error reading file: {}", e);
+            return;
+        }
+    };
+
+    // Assuming parse_statm_content(statm_content: &str) -> Result<(usize, usize, usize), &'static str>
+    let (vm_kb, res_kb, shr_kb) = match parse_statm_content(statm_content) {
+        Ok((vm, res, shr)) => (vm, res, shr),
+        Err(e) => {
+            println!("Error parsing statm content: {}", e);
+            return;
+        }
+    };
+
+    // Convert VIRT, RES, SHR to strings
+    let vm = format!("{} KB", vm_kb);
+    let res = format!("{} KB", res_kb);
+    let shr = format!("{} KB", shr_kb);
 
     // Get CPU
     let uptime_path = Path::new("/proc/uptime");
@@ -137,17 +184,6 @@ fn parse_proc(path: &PathBuf) {
         }
     };
 
-    let stat_path = path.join("stat");
-    let stat_content = match cat(&stat_path) {
-        Ok(content) => {
-            // Replace null bytes with spaces for readability
-            content.replace("\0", " ").trim_end().to_string()
-        }
-        Err(e) => {
-            println!("Error reading file: {}", e);
-            return;
-        }
-    };
     let (utime, stime) = parse_utime_and_stime(stat_content);
     let cpus = num_cpus::get();
 
@@ -167,15 +203,36 @@ fn parse_proc(path: &PathBuf) {
     };
     let mem_usage_f32 = mem_usage_string.parse::<f32>().unwrap_or(0.0);
 
-    // Formatting mem_usage
     let mem_usage = format_memory_size(mem_usage_f32);
+
+    // Get time
+    let time = format_process_time(utime, stime);
+    println!("utime: {}, stime: {}, time: {}", utime, stime, time);
+
+    // Get command
+    let cmdline_path = path.join("cmdline");
+    let command = match cat(&cmdline_path) {
+        Ok(content) => {
+            // Replace null bytes with spaces for readability
+            content.replace("\0", " ").trim_end().to_string()
+        }
+        Err(e) => {
+            println!("Error reading file: {}", e);
+            return;
+        }
+    };
 
     // Add process info
     add_process_info(ProcessInfo {
         pid,
         user,
+        nice_value,
+        vm,
+        res,
+        shr,
         cpu_usage,
         mem_usage,
+        time,
         command,
     });
 }

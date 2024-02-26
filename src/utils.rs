@@ -68,3 +68,50 @@ pub fn parse_utime_and_stime(stat_content: String) -> (f64, f64) {
 
     (utime_seconds, stime_seconds)
 }
+
+// Parse statm
+pub fn parse_statm_content(statm_content: String) -> Result<(usize, usize, usize), &'static str> {
+    let parts: Vec<&str> = statm_content.split_whitespace().collect();
+
+    // Assuming a system page size of 4096 bytes (4 KB).
+    // You might want to dynamically fetch this value for accuracy.
+    let page_size_kb = 4;
+
+    let virtual_memory_kb = parts
+        .get(0)
+        .ok_or("Failed to read virtual memory size")
+        .and_then(|v| {
+            v.parse::<usize>()
+                .map_err(|_| "Failed to parse virtual memory size")
+        })?
+        * page_size_kb;
+
+    let resident_set_size_kb = parts
+        .get(1)
+        .ok_or("Failed to read resident set size")
+        .and_then(|v| {
+            v.parse::<usize>()
+                .map_err(|_| "Failed to parse resident set size")
+        })?
+        * page_size_kb;
+
+    let shared_memory_kb = parts
+        .get(2)
+        .ok_or("Failed to read shared memory size")
+        .and_then(|v| {
+            v.parse::<usize>()
+                .map_err(|_| "Failed to parse shared memory size")
+        })?
+        * page_size_kb;
+
+    Ok((virtual_memory_kb, resident_set_size_kb, shared_memory_kb))
+}
+
+// Format time
+pub fn format_process_time(utime: f64, stime: f64) -> String {
+    let total_time_in_secs = (utime + stime) / 100.0;
+    let hours = total_time_in_secs / 3600.0;
+    let minutes = (total_time_in_secs % 3600.0) / 60.0;
+    let seconds = total_time_in_secs % 60.0;
+    format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
+}

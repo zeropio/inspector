@@ -15,13 +15,18 @@ fn main() {
         // Testing information returned
         for process in processes {
             println!(
-                "PID: {}, User: {}, Command: {}, CPU Usage: {}, \
-            Memory Usage: {}",
+                "PID: {}, User: {}, NI: {}, Virt: {}, RES: {}, SHR: {}, CPU Usage: {}, \
+            Memory Usage: {}, Time: {}, Command: {}",
                 process.pid(),
                 process.user(),
-                process.command(),
+                process.nice_value(),
+                process.vm(),
+                process.res(),
+                process.shr(),
                 process.cpu_usage(),
-                process.mem_usage()
+                process.mem_usage(),
+                process.time(),
+                process.command(),
             );
         }
 
