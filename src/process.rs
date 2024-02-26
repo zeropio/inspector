@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
 use std::collections::VecDeque;
@@ -7,7 +7,8 @@ use crate::utils::{
     cat,
     process_search_line,
     get_username_from_uid,
-    format_memory_size
+    format_memory_size,
+    parse_utime_and_stime
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -19,7 +20,7 @@ use crate::utils::{
 pub struct ProcessInfo {
     pid: i32,
     user: String,
-    cpu_usage: f32,
+    cpu_usage: String,
     mem_usage: String,
     command: String,
 }
@@ -32,7 +33,7 @@ impl ProcessInfo {
     pub fn user(&self) -> &String {
         &self.user
     }
-    pub fn cpu_usage(&self) -> f32 { self.cpu_usage }
+    pub fn cpu_usage(&self) -> &String { &self.cpu_usage }
     pub fn mem_usage(&self) -> &String {
         &self.mem_usage
     }
@@ -119,8 +120,35 @@ fn parse_proc(path: &PathBuf) {
         },
     };
 
-    // Placeholder values for CPU usage, memory usage, and command
-    let cpu_usage = 0.0; // Placeholder
+    // Get CPU
+    let uptime_path = Path::new("/proc/uptime");
+    let uptime = match cat(&uptime_path) {
+        Ok(content) => {
+            let uptime_str = content.split_whitespace().next().unwrap_or("0");
+            let uptime_seconds: f64 = uptime_str.parse().unwrap_or(0.0);
+            uptime_seconds
+        },
+        Err(e) => {
+            println!("Error reading file: {}", e);
+            return;
+        },
+    };
+
+    let stat_path = path.join("stat");
+    let stat_content = match cat(&stat_path) {
+        Ok(content) => {
+            // Replace null bytes with spaces for readability
+            content.replace("\0", " ").trim_end().to_string()
+        },
+        Err(e) => {
+            println!("Error reading file: {}", e);
+            return;
+        },
+    };
+    let (utime, stime) = parse_utime_and_stime(stat_content);
+    let cpus = num_cpus::get();
+
+    let cpu_usage = format!("{:.2}%", ((utime + stime) as f64 / uptime) * 100.0 / cpus as f64);
 
     // Get memory usage
     // we wil use status_path

@@ -46,3 +46,17 @@ pub fn format_memory_size(kilobytes: f32) -> String {
         format!("{:.2} kB", kilobytes)
     }
 }
+
+// Parsing utime and stime
+pub fn parse_utime_and_stime(stat_content: String) -> (f64, f64) {
+    let parts: Vec<&str> = stat_content.split_whitespace().collect();
+    const TICKS_PER_SECOND: f64 = 100.0; // Common value, but it's better to check this for your system
+
+    let utime_ticks = parts.get(13).and_then(|&s| s.parse::<f64>().ok()).unwrap_or(0.0);
+    let stime_ticks = parts.get(14).and_then(|&s| s.parse::<f64>().ok()).unwrap_or(0.0);
+
+    let utime_seconds = utime_ticks / TICKS_PER_SECOND;
+    let stime_seconds = stime_ticks / TICKS_PER_SECOND;
+
+    (utime_seconds, stime_seconds)
+}
