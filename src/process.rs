@@ -3,7 +3,12 @@ use std::path::PathBuf;
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
 use std::collections::VecDeque;
-use crate::utils::{cat, process_search_line, get_username_from_uid};
+use crate::utils::{
+    cat,
+    process_search_line,
+    get_username_from_uid,
+    format_memory_size
+};
 
 //--------------------------------------------------------------------------------------------------
 // Variables
@@ -15,7 +20,7 @@ pub struct ProcessInfo {
     pid: i32,
     user: String,
     cpu_usage: f32,
-    mem_usage: f32,
+    mem_usage: String,
     command: String,
 }
 
@@ -27,15 +32,10 @@ impl ProcessInfo {
     pub fn user(&self) -> &String {
         &self.user
     }
-
-    pub fn cpu_usage(&self) -> f32 {
-        self.cpu_usage
+    pub fn cpu_usage(&self) -> f32 { self.cpu_usage }
+    pub fn mem_usage(&self) -> &String {
+        &self.mem_usage
     }
-
-    pub fn mem_usage(&self) -> f32 {
-        self.mem_usage
-    }
-
     pub fn command(&self) -> &String {
         &self.command
     }
@@ -121,7 +121,21 @@ fn parse_proc(path: &PathBuf) {
 
     // Placeholder values for CPU usage, memory usage, and command
     let cpu_usage = 0.0; // Placeholder
-    let mem_usage = 0.0; // Placeholder
+
+    // Get memory usage
+    // we wil use status_path
+    let mem_usage_string = match cat(&status_path) {
+        Ok(content) => process_search_line(&content, "VmRSS"),
+        Err(e) => {
+            println!("Error reading file: {}", e);
+            return;
+        },
+    };
+    let mem_usage_f32 =
+        mem_usage_string.parse::<f32>().unwrap_or(0.0);
+
+    // Formatting mem_usage
+    let mem_usage = format_memory_size(mem_usage_f32);
 
     // Add process info
     add_process_info(ProcessInfo {
