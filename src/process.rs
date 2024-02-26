@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use parking_lot::Mutex;
 use std::collections::VecDeque;
 use std::fs;
+use rayon::prelude::*;
 use std::path::{Path, PathBuf};
 
 //--------------------------------------------------------------------------------------------------
@@ -182,11 +183,14 @@ fn parse_proc(path: &PathBuf) {
 // Access proc
 pub fn access_proc() {
     if let Ok(paths) = fs::read_dir("/proc") {
-        for path in paths.filter_map(Result::ok) {
-            let path_buf = path.path();
-            if check_proc(&path_buf) {
-                parse_proc(&path_buf);
-            }
-        }
+        paths.filter_map(Result::ok)
+            .collect::<Vec<_>>() // Collect into Vec to ensure the iterator is owned
+            .par_iter() // Convert to parallel iterator
+            .for_each(|entry| {
+                let path_buf = entry.path();
+                if check_proc(&path_buf) {
+                    parse_proc(&path_buf);
+                }
+            });
     }
 }
