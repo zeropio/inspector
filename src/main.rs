@@ -10,6 +10,8 @@ use tui::{
 };
 use tui::style::{Color, Style};
 use std::io;
+use tui::layout::Alignment;
+use tui::widgets::Paragraph;
 
 mod process;
 mod utils;
@@ -57,7 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .split(f.size());
 
             let table = Table::new(rows)
-                .block(Block::default().title("Processes").borders(Borders::ALL))
+                .block(Block::default().title("Inspector").borders(Borders::ALL))
                 .header(Row::new(vec![
                     "PID", "User", "NI", "Virt", "RES", "SHR", "CPU Usage", "Mem Usage", "Time", "Command",
                 ]).style(Style::default().fg(Color::Yellow))) // Optional header style
@@ -73,7 +75,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Constraint::Percentage(10),
                     Constraint::Percentage(20),
                 ]);
-            f.render_widget(table, chunks[0]);
+
+            // Define a paragraph for the footnote
+            let footnote = Paragraph::new("Press 'q' to exit")
+                .style(Style::default().fg(Color::LightCyan))
+                .alignment(Alignment::Center);
+
+            // Modify your layout to include space for the footnote
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .margin(1)
+                .constraints([
+                    Constraint::Length(3), // Adjust the length to fit your header if needed
+                    Constraint::Min(0),    // Table will use the rest of the space
+                    Constraint::Length(1), // Space for the footnote
+                ])
+                .split(f.size());
+
+            // Render
+            f.render_widget(table, chunks[1]);
+            f.render_widget(footnote, chunks[2]);
         })?;
 
         // Handle input for quitting
