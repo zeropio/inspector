@@ -207,7 +207,6 @@ fn parse_proc(path: &PathBuf) {
 
     // Get time
     let time = format_process_time(utime, stime);
-    println!("utime: {}, stime: {}, time: {}", utime, stime, time);
 
     // Get command
     let cmdline_path = path.join("cmdline");

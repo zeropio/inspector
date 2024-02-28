@@ -109,9 +109,10 @@ pub fn parse_statm_content(statm_content: String) -> Result<(usize, usize, usize
 
 // Format time
 pub fn format_process_time(utime: f64, stime: f64) -> String {
-    let total_time_in_secs = (utime + stime) / 100.0;
-    let hours = total_time_in_secs / 3600.0;
-    let minutes = (total_time_in_secs % 3600.0) / 60.0;
-    let seconds = total_time_in_secs % 60.0;
+    let total_time_in_secs = ((utime + stime) / 100.0).round() as i64;
+    let hours = total_time_in_secs / 3600;
+    let minutes = (total_time_in_secs % 3600) / 60;
+    let seconds = total_time_in_secs % 60;
     format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
 }
+
