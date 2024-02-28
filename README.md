@@ -2,6 +2,27 @@
 
 Inspector is a command-line process monitoring tool for Linux, built using Rust. It provides real-time visibility into system processes, displaying detailed information such as PID, user, CPU, and memory usage.
 
+## ToDo
+- [ ] Better TUI
+  - [ ] Order by columns
+  - [ ] Color
+  - [ ] Add graph
+  - [ ] Search/Filter functionality
+  - [ ] Better help
+  - [ ] Themes (?)
+- [ ] More monitoring
+  - [ ] Network usage
+  - [ ] I/O
+  - [ ] Better uptime
+- [ ] System summary
+- [ ] Logging monitoring
+- [ ] Process management
+- [ ] Better performance
+
+## Overview
+
+![](img/ss.png)
+
 ## Building the Project
 To build the project, you will need [Rust](https://www.rust-lang.org/tools/install) and Cargo installed on your system.
 
@@ -35,7 +56,6 @@ After building the project, you can run the inspector binary directly from the c
   
 ## Controls
 `q`: Quit the application
-  
 
 ## Contributing
 Contributions to Inspector are welcome! Feel free to open issues or submit pull requests on the project's repository.
