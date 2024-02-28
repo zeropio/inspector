@@ -238,16 +238,25 @@ fn parse_proc(path: &PathBuf) {
 
 // Access proc
 pub fn access_proc() {
-    if let Ok(paths) = fs::read_dir("/proc") {
-        paths
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>()
-            .par_iter()
-            .for_each(|entry| {
-                let path_buf = entry.path();
-                if check_proc(&path_buf) {
-                    parse_proc(&path_buf);
-                }
-            });
+    // Get all the paths we need to process
+    let paths = if let Ok(paths) = fs::read_dir("/proc") {
+        paths.filter_map(Result::ok).collect::<Vec<_>>()
+    } else {
+        return; // Handle the error as needed
+    };
+
+    // Clear existing process information outside of the locked scope
+    {
+        let mut data = PROCESS_INFO.lock();
+        data.clear();
     }
+
+    // Process each path without holding onto the lock
+    paths.par_iter().for_each(|entry| {
+        let path_buf = entry.path();
+        if check_proc(&path_buf) {
+            parse_proc(&path_buf);
+        }
+    });
 }
+
