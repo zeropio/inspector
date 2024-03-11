@@ -12,7 +12,7 @@ Inspector is a command-line process monitoring tool for Linux, built using Rust.
   - [ ] Themes (?)
 - [ ] More monitoring
   - [ ] Network usage
-  - [ ] I/O
+  - [X] I/O
   - [ ] Better uptime
 - [ ] System summary
 - [ ] Logging monitoring
@@ -21,7 +21,7 @@ Inspector is a command-line process monitoring tool for Linux, built using Rust.
 
 ## Overview
 
-![](img/ss.png)
+![](img/screenshot.png)
 
 ## Building the Project
 To build the project, you will need [Rust](https://www.rust-lang.org/tools/install) and Cargo installed on your system.
@@ -37,8 +37,10 @@ This command tells Cargo to compile the inspector package with optimizations sui
 ## Running the Application
 After building the project, you can run the inspector binary directly from the command line:
 ```
-./target/release/inspector
+sudo ./target/release/inspector
 ```
+
+Sudo is required to read IO.
 
 ## Features
 - Real-time process monitoring
