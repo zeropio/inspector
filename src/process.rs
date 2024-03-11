@@ -24,6 +24,7 @@ pub struct ProcessInfo {
     shr: String,
     cpu_usage: String,
     mem_usage: String,
+    io_usage: String,
     time: String,
     command: String,
 }
@@ -53,6 +54,9 @@ impl ProcessInfo {
     }
     pub fn mem_usage(&self) -> &String {
         &self.mem_usage
+    }
+    pub fn io_usage(&self) -> &String {
+        &self.io_usage
     }
     pub fn time(&self) -> &String {
         &self.time
@@ -144,7 +148,9 @@ fn parse_proc(path: &PathBuf) {
         }
     };
     let parts: Vec<&str> = stat_content.split_whitespace().collect();
-    let nice_value = parts.get(18).unwrap_or(&"").parse::<i32>().unwrap_or(0) - 20; // Adjusting back from kernel representation
+
+    // Adjusting back from kernel representation
+    let nice_value = parts.get(18).unwrap_or(&"").parse::<i32>().unwrap_or(0) - 20;
 
     // Get VIRT, RES and SHR
     let statm_path = path.join("statm");
@@ -205,6 +211,29 @@ fn parse_proc(path: &PathBuf) {
 
     let mem_usage = format_memory_size(mem_usage_f32);
 
+    // Get io usage
+    let io_path = path.join("io");
+    let io_usage = match cat(&io_path) {
+        Ok(content) => {
+            let read_bytes: f32 = content.lines()
+                .find(|line| line.starts_with("read_bytes"))
+                .and_then(|line| line.split_whitespace().nth(1))
+                .unwrap_or("0")
+                .parse()
+                .unwrap_or(0.0);
+
+            let write_bytes: f32 = content.lines()
+                .find(|line| line.starts_with("write_bytes"))
+                .and_then(|line| line.split_whitespace().nth(1))
+                .unwrap_or("0")
+                .parse()
+                .unwrap_or(0.0);
+
+            format!("R: {}, W: {}", format_memory_size(read_bytes), format_memory_size(write_bytes))
+        },
+        Err(_) => "Error reading IO".to_string(),
+    };
+
     // Get time
     let time = format_process_time(utime, stime);
 
@@ -231,6 +260,7 @@ fn parse_proc(path: &PathBuf) {
         shr,
         cpu_usage,
         mem_usage,
+        io_usage,
         time,
         command,
     });

@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let backend = TermionBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let update_interval = Duration::from_secs(1);
+    let update_interval = Duration::from_millis(500);
     let stdin = termion::async_stdin();
     let mut keys = stdin.keys();
 
@@ -45,6 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     process.shr().to_string(),
                     process.cpu_usage().to_string(),
                     process.mem_usage().to_string(),
+                    process.io_usage().clone(),
                     process.time().to_string(),
                     process.command().to_string(),
                 ])
@@ -61,20 +62,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let table = Table::new(rows)
                 .block(Block::default().title("Inspector").borders(Borders::ALL))
                 .header(Row::new(vec![
-                    "PID", "User", "NI", "Virt", "RES", "SHR", "CPU Usage", "Mem Usage", "Time", "Command",
+                    "PID", "User", "NI", "Virt", "RES", "SHR", "CPU Usage", "Mem Usage", "IO", "Time", "Command",
                 ]).style(Style::default().fg(Color::Yellow))) // Optional header style
                 .widths(&[
-                    Constraint::Percentage(5),
-                    Constraint::Percentage(10),
-                    Constraint::Percentage(5),
-                    Constraint::Percentage(10),
-                    Constraint::Percentage(10),
-                    Constraint::Percentage(10),
-                    Constraint::Percentage(10),
-                    Constraint::Percentage(10),
-                    Constraint::Percentage(10),
-                    Constraint::Percentage(20),
+                    Constraint::Percentage(5), // PID
+                    Constraint::Percentage(8), // User
+                    Constraint::Percentage(5), // NI
+                    Constraint::Percentage(8), // Virt
+                    Constraint::Percentage(8), // RES
+                    Constraint::Percentage(8), // SHR
+                    Constraint::Percentage(8), // CPU Usage
+                    Constraint::Percentage(8), // Mem Usage
+                    Constraint::Percentage(10), // IO - increased space
+                    Constraint::Percentage(8),  // Time
+                    Constraint::Percentage(14), // Command - reduced space
                 ]);
+
 
             // Define a paragraph for the footnote
             let footnote = Paragraph::new("Press 'q' to exit")
